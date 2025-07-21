@@ -1,0 +1,101 @@
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+function Signup() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [message, setMessage] = useState("");
+    const navigate = useNavigate();
+
+    const handleSignup = async (e) => {
+        e.preventDefault();
+
+        try {
+            const res = await axios.post(
+                "https://712acae1-2bfb-4fde-9185-b296031b6ad5-00-3fl8pnkj0cmlc.sisko.replit.dev/signup",
+                { email, password }
+            );
+
+            setMessage(res.data.message || "Signup successful!");
+            console.log("Signed up:", res.data);
+
+            // Optionally redirect to login page after signup
+            setTimeout(() => navigate("/"), 1500);
+        } catch (err) {
+            setMessage(err.response?.data?.message || " Signup failed");
+        }
+    };
+
+    return (
+        <div style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+            backgroundColor: "#f0f2f5"
+        }}>
+            <div style={{
+                backgroundColor: "#fff",
+                padding: "30px",
+                borderRadius: "10px",
+                boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+                width: "100%",
+                maxWidth: "400px"
+            }}>
+                <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Sign Up</h2>
+                <form onSubmit={handleSignup}>
+                    <div style={{ marginBottom: 15 }}>
+                        <label>Email:</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={{
+                                width: "100%",
+                                padding: "10px",
+                                marginTop: "5px",
+                                borderRadius: "5px",
+                                border: "1px solid #ccc"
+                            }}
+                        />
+                    </div>
+                    <div style={{ marginBottom: 15 }}>
+                        <label>Password:</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={{
+                                width: "100%",
+                                padding: "10px",
+                                marginTop: "5px",
+                                borderRadius: "5px",
+                                border: "1px solid #ccc"
+                            }}
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        style={{
+                            width: "100%",
+                            padding: "10px",
+                            backgroundColor: "#28a745",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "5px",
+                            cursor: "pointer"
+                        }}
+                    >
+                        Sign Up
+                    </button>
+                </form>
+                {message && <p style={{ marginTop: 15, color: "green", textAlign: "center" }}>{message}</p>}
+            </div>
+        </div>
+    );
+}
+
+export default Signup;
