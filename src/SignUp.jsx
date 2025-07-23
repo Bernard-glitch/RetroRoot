@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./Firebase";
+
 
 function Signup() {
     const [email, setEmail] = useState("");
@@ -8,14 +11,40 @@ function Signup() {
     const [message, setMessage] = useState("");
     const navigate = useNavigate();
 
+
     const handleSignup = async (e) => {
         e.preventDefault();
+
+        function validatePassword(password) {
+            if (password.length < 6) {
+                return "Password must be at least 6 characters long.";
+            }
+            return null;
+        }
+
+        const error = validatePassword(password);
+        if (error) {
+            console.error(error);
+            return;
+        }
 
         try {
             const res = await axios.post(
                 "https://712acae1-2bfb-4fde-9185-b296031b6ad5-00-3fl8pnkj0cmlc.sisko.replit.dev/signup",
-                { email, password }
-            );
+                { email, password })
+
+            if (res.data) {
+                try {
+                    const firebaseRes = await createUserWithEmailAndPassword(auth, email, password);
+                    console.log(firebaseRes);
+
+                    console.log("Profile updated successfully");
+
+                } catch (err) {
+                    console.error("Error in Firebase sign up:", err);
+                }
+            }
+            ;
 
             setMessage(res.data.message || "Signup successful!");
             console.log("Signed up:", res.data);
@@ -77,6 +106,11 @@ function Signup() {
                             }}
                         />
                     </div>
+                    {password.length > 0 && password.length < 6 && (
+                        <p style={{ color: "red", marginBottom: "10px" }}>
+                            Password must be at least 6 characters long.
+                        </p>
+                    )}
                     <button
                         type="submit"
                         style={{

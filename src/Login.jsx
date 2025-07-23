@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./Firebase";
 
 function Login() {
     const [email, setEmail] = useState("");
@@ -16,6 +18,16 @@ function Login() {
                 "https://712acae1-2bfb-4fde-9185-b296031b6ad5-00-3fl8pnkj0cmlc.sisko.replit.dev/login",
                 { email, password }
             );
+
+            if (res.data) {
+                try {
+                    const firebaseRes = await signInWithEmailAndPassword(auth, email, password);
+                    console.log(firebaseRes.user);
+
+                } catch (err) {
+                    console.error("Error in Firebase sign up:", err);
+                }
+            }
 
             setMessage(res.data.message);
             console.log("User:", res.data.user);
