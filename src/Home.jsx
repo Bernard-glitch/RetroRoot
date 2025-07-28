@@ -7,7 +7,6 @@ import clothings from "./assets/male-clothes.png";
 import collectibles from "./assets/hobbies.png";
 
 
-
 function Home() {
     const navigate = useNavigate();
 
@@ -156,12 +155,21 @@ function Home() {
                     fontFamily: "sans-serif"
                 }}>
                     {[
-                        { icon: vehicle, label: "Vehicles" },
-                        { icon: electronics, label: "Electronics" },
-                        { icon: clothings, label: "Clothings" },
-                        { icon: collectibles, label: "Collectibles" }
+                        { icon: vehicle, label: "Vehicles", path: "/vehicles" },
+                        { icon: electronics, label: "Electronics", path: "/electronics" },
+                        { icon: clothings, label: "Clothings", path: "/clothings" },
+                        { icon: collectibles, label: "Collectibles", path: "/collectibles" }
                     ].map((item, index) => (
-                        <div key={index} style={{ textAlign: "center", cursor: "pointer", transition: "transform 0.3 ease, box-shadow 0.3s ease" }}
+                        <div
+                            key={index}
+                            style={{
+                                textAlign: "center",
+                                cursor: "pointer",
+                                transition: "transform 0.3s ease, box-shadow 0.3s ease"
+                            }}
+                            onClick={() => {
+                                if (item.path) navigate(item.path);
+                            }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.transform = "translateY(-8px)";
                                 e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.15)";
@@ -169,7 +177,8 @@ function Home() {
                             onMouseLeave={(e) => {
                                 e.currentTarget.style.transform = "translateY(0)";
                                 e.currentTarget.style.boxShadow = "none";
-                            }}>
+                            }}
+                        >
                             <div style={{
                                 backgroundColor: "#c8cfd6ff",
                                 borderRadius: "50%",
@@ -185,7 +194,8 @@ function Home() {
                             </div>
                             <p style={{ marginTop: "10px", fontWeight: "500" }}>{item.label}</p>
                         </div>
-                    ))}
+                    ))
+                    }
                 </div>
             </div>
         </div>
