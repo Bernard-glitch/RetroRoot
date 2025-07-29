@@ -7,6 +7,7 @@ import VehiclePage from "./pages/VehiclePage";
 import ElectronicsPage from "./pages/ElectronicsPage";
 import ClothingsPage from "./pages/ClothingsPage";
 import CollectiblesPage from "./pages/Collectibles";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
     return (
@@ -14,6 +15,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route
                     path="/home"
                     element={
