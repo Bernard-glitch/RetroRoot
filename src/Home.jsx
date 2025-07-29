@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import sloganImg from "./assets/retroroot-slogan.png";
+import sloganImg from ".src/assets/retroroot-slogan.png";
 import vehicle from "./assets/vehicles.png";
 import electronics from "./assets/device.png";
 import clothings from "./assets/male-clothes.png";
