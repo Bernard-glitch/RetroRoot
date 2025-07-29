@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "./Firebase";
+import { auth } from "./firebase";
 
 function Login() {
     const [email, setEmail] = useState("");

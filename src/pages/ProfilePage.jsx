@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { db, storage } from "../firebase";
-import { doc, getDoc, setDoc, addDoc, collection, getDocs, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+    doc,
+    getDoc,
+    setDoc,
+    addDoc,
+    collection,
+    getDocs,
+    deleteDoc,
+    serverTimestamp,
+} from "firebase/firestore";
+import {
+    ref,
+    uploadBytes,
+    getDownloadURL,
+} from "firebase/storage";
 import { getAuth } from "firebase/auth";
+import Sidebar from "../component/SideBar";
 
 function ProfilePage() {
     const auth = getAuth();
@@ -15,20 +29,38 @@ function ProfilePage() {
         location: "Selangor, Malaysia",
         joinDate: "Joined July 2024",
         profilePic: "",
-        banner: ""
+        banner: "",
     });
 
     const [formData, setFormData] = useState(profile);
     const [editOpen, setEditOpen] = useState(false);
 
     const [postOpen, setPostOpen] = useState(false);
-    const [postData, setPostData] = useState({ title: "", description: "", price: "", image: "" });
+    const [postData, setPostData] = useState({
+        title: "",
+        description: "",
+        price: "",
+        image: "",
+    });
+
     const [posts, setPosts] = useState([]);
+
+    const [editPostOpen, setEditPostOpen] = useState(false);
+    const [editingPostId, setEditingPostId] = useState(null);
+    const [editPostData, setEditPostData] = useState({
+        title: "",
+        description: "",
+        price: "",
+        image: "",
+    });
 
     const userRef = userId ? doc(db, "users", userId) : null;
 
     useEffect(() => {
-        if (userId) fetchProfile();
+        if (userId) {
+            fetchProfile();
+            fetchPosts();
+        }
     }, [userId]);
 
     const fetchProfile = async () => {
@@ -39,8 +71,41 @@ function ProfilePage() {
         }
     };
 
+    const fetchPosts = async () => {
+        const querySnapshot = await getDocs(collection(db, "posts"));
+        const userPosts = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.userId === userId) {
+                userPosts.push({ id: doc.id, ...data });
+            }
+        });
+        setPosts(userPosts);
+    };
+
+    const handlePostChange = (e) => {
+        const { name, value } = e.target;
+        setPostData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handlePostImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setPostData((prev) => ({ ...prev, image: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handlePostSubmit = async () => {
-        if (!postData.title || !postData.description || !postData.price || !postData.image) {
+        if (
+            !postData.title ||
+            !postData.description ||
+            !postData.price ||
+            !postData.image
+        ) {
             alert("Please fill in all fields.");
             return;
         }
@@ -52,16 +117,63 @@ function ProfilePage() {
                 description: postData.description,
                 price: postData.price,
                 image: postData.image,
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
             });
 
-            // Clear form
             setPostData({ title: "", description: "", price: "", image: "" });
             setPostOpen(false);
             fetchPosts();
         } catch (error) {
             console.error("Error posting item:", error);
             alert("Failed to post item.");
+        }
+    };
+
+    const handleEditPostClick = (post) => {
+        setEditingPostId(post.id);
+        setEditPostData({
+            title: post.title,
+            description: post.description,
+            price: post.price,
+            image: post.image,
+        });
+        setEditPostOpen(true);
+    };
+
+    const handleEditPostChange = (e) => {
+        const { name, value } = e.target;
+        setEditPostData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const saveEditedPost = async () => {
+        if (!editingPostId) return;
+
+        try {
+            await setDoc(doc(db, "posts", editingPostId), {
+                ...editPostData,
+                userId,
+                updatedAt: serverTimestamp(),
+            });
+
+            setEditPostOpen(false);
+            setEditingPostId(null);
+            fetchPosts();
+        } catch (error) {
+            console.error("Error updating post:", error);
+            alert("Failed to update post.");
+        }
+    };
+
+    const deletePost = async (id) => {
+        const confirm = window.confirm("Are you sure you want to delete this post?");
+        if (!confirm) return;
+
+        try {
+            await deleteDoc(doc(db, "posts", id));
+            setPosts((prev) => prev.filter((p) => p.id !== id));
+        } catch (error) {
+            console.error("Error deleting post:", error);
+            alert("Failed to delete post.");
         }
     };
 
@@ -86,165 +198,136 @@ function ProfilePage() {
         setEditOpen(false);
     };
 
-    // ----------- Posts --------------
-    const handlePostChange = (e) => {
-        const { name, value } = e.target;
-        setPostData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handlePostImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                setPostData((prev) => ({ ...prev, image: reader.result }));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const fetchPosts = async () => {
-        const postRef = collection(db, "posts");
-        const querySnapshot = await getDocs(postRef);
-        const userPosts = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.userId === userId) {
-                userPosts.push({ id: doc.id, ...data });
-            }
-        });
-        setPosts(userPosts);
-    };
-
-    useEffect(() => {
-        if (userId) fetchPosts();
-    }, [userId]);
-
-    // ------------- Styles -------------
     const modalOverlay = {
-        position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-        backgroundColor: "rgba(0, 0, 0, 0.6)", display: "flex",
-        justifyContent: "center", alignItems: "center", zIndex: 1000
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
     };
 
     const modalBox = {
-        backgroundColor: "#fff", padding: "30px", borderRadius: "10px",
-        width: "90%", maxWidth: "500px", boxShadow: "0 8px 25px rgba(0, 0, 0, 0.2)",
-        display: "flex", flexDirection: "column", gap: "15px"
+        backgroundColor: "#fff",
+        padding: "30px",
+        borderRadius: "10px",
+        width: "90%",
+        maxWidth: "500px",
+        boxShadow: "0 8px 25px rgba(0, 0, 0, 0.2)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "15px",
     };
 
-    const labelStyle = { fontWeight: "500", fontSize: "14px" };
     const inputStyle = {
-        width: "100%", padding: "10px", borderRadius: "6px",
-        border: "1px solid #ccc", fontSize: "14px"
+        width: "100%",
+        padding: "10px",
+        borderRadius: "6px",
+        border: "1px solid #ccc",
+        fontSize: "14px",
     };
     const buttonStyle = {
-        padding: "8px 16px", borderRadius: "20px", border: "none",
-        backgroundColor: "#1da1f2", color: "#fff", cursor: "pointer", fontWeight: "600"
+        padding: "8px 16px",
+        borderRadius: "20px",
+        border: "none",
+        backgroundColor: "#1da1f2",
+        color: "#fff",
+        cursor: "pointer",
+        fontWeight: "600",
     };
     const cancelButton = { ...buttonStyle, backgroundColor: "#aaa" };
 
     return (
-        <div style={{ fontFamily: "'Segoe UI', sans-serif", backgroundColor: "#f4f4f4", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {/* Banner and Profile Picture */}
-            <div style={{ width: "100%", position: "relative" }}>
-                <img src={profile.banner} alt="Banner" style={{ width: "100%", height: "240px", objectFit: "cover" }} />
-                <img src={profile.profilePic} alt="Profile" style={{ width: "120px", height: "120px", borderRadius: "50%", border: "4px solid white", position: "absolute", bottom: "-60px", left: "50%", transform: "translateX(-50%)", backgroundColor: "#fff" }} />
-            </div>
-
-            {/* Profile Info */}
-            <div style={{ width: "100%", padding: "70px 30px 30px", backgroundColor: "white", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", borderRadius: "0 0 10px 10px", textAlign: "center" }}>
+        <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
+            {/* Profile Display */}
+            <div style={{ textAlign: "center", padding: "20px" }}>
+                <img src={profile.banner} alt="banner" style={{ width: "100%", height: "200px", objectFit: "cover" }} />
+                <img src={profile.profilePic} alt="profile" style={{ width: "100px", height: "100px", borderRadius: "50%", marginTop: "-50px", border: "3px solid white" }} />
                 <h2>{profile.fullName}</h2>
-                <p style={{ color: "#555" }}>@{profile.username}</p>
+                <p>@{profile.username}</p>
                 <p>{profile.bio}</p>
-                <div style={{ color: "#777", fontSize: "14px", display: "flex", justifyContent: "center", gap: "20px" }}>
-                    <span>📍 {profile.location}</span>
-                    <span>🗓 {profile.joinDate}</span>
-                </div>
-
-                <div style={{ marginTop: "20px", display: "flex", justifyContent: "center", gap: "10px" }}>
-                    <button style={buttonStyle} onClick={() => setEditOpen(true)}>Edit Profile</button>
-                    <button style={{ ...buttonStyle, backgroundColor: "#ff4d4d" }}>Logout</button>
-                </div>
+                <button onClick={() => setEditOpen(true)} style={buttonStyle}>Edit Profile</button>
+                <button onClick={() => setPostOpen(true)} style={{ ...buttonStyle, marginLeft: "10px" }}>Add New Post</button>
             </div>
 
-            {/* Edit Modal */}
-            {editOpen && (
-                <div style={modalOverlay}>
-                    <div style={modalBox}>
-                        <h3>Edit Profile</h3>
-
-                        <label style={labelStyle}>Full Name</label>
-                        <input type="text" name="fullName" value={formData.fullName} onChange={handleEditChange} style={inputStyle} />
-
-                        <label style={labelStyle}>Bio</label>
-                        <textarea name="bio" value={formData.bio} onChange={handleEditChange} rows="3" style={{ ...inputStyle, resize: "none" }} />
-
-                        <label style={labelStyle}>Profile Picture URL</label>
-                        <input type="text" name="profilePic" value={formData.profilePic} onChange={handleEditChange} style={inputStyle} />
-                        <input type="file" name="profilePic" accept="image/*" onChange={handleFileChange} />
-
-                        <label style={labelStyle}>Banner Image URL</label>
-                        <input type="text" name="banner" value={formData.banner} onChange={handleEditChange} style={inputStyle} />
-                        <input type="file" name="banner" accept="image/*" onChange={handleFileChange} />
-
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px", gap: "10px" }}>
-                            <button onClick={() => setEditOpen(false)} style={cancelButton}>Cancel</button>
-                            <button onClick={saveChanges} style={buttonStyle}>Save</button>
+            {/* Posts */}
+            <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto" }}>
+                <h3>My Posts</h3>
+                {posts.length === 0 ? (
+                    <p>No posts yet.</p>
+                ) : (
+                    posts.map((post) => (
+                        <div key={post.id} style={{ background: "#fff", borderRadius: "8px", padding: "15px", marginBottom: "15px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}>
+                            <img src={post.image} alt={post.title} style={{ width: "100%", height: "180px", objectFit: "cover", borderRadius: "6px" }} />
+                            <h4>{post.title}</h4>
+                            <p>{post.description}</p>
+                            <p><strong>RM {post.price}</strong></p>
+                            <div style={{ display: "flex", gap: "10px" }}>
+                                <button style={buttonStyle} onClick={() => handleEditPostClick(post)}>Edit</button>
+                                <button style={{ ...buttonStyle, backgroundColor: "#ff4d4d" }} onClick={() => deletePost(post.id)}>Delete</button>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    ))
+                )}
+            </div>
 
             {/* Post Modal */}
             {postOpen && (
                 <div style={modalOverlay}>
                     <div style={modalBox}>
                         <h3>Create New Post</h3>
-
-                        <label style={labelStyle}>Title</label>
-                        <input type="text" name="title" value={postData.title} onChange={handlePostChange} style={inputStyle} />
-
-                        <label style={labelStyle}>Description</label>
-                        <textarea name="description" value={postData.description} onChange={handlePostChange} rows="3" style={{ ...inputStyle, resize: "none" }} />
-
-                        <label style={labelStyle}>Price (RM)</label>
-                        <input type="text" name="price" value={postData.price} onChange={handlePostChange} style={inputStyle} />
-
-                        <label style={labelStyle}>Image</label>
+                        <input name="title" value={postData.title} onChange={handlePostChange} placeholder="Title" style={inputStyle} />
+                        <textarea name="description" value={postData.description} onChange={handlePostChange} placeholder="Description" rows="3" style={inputStyle} />
+                        <input name="price" value={postData.price} onChange={handlePostChange} placeholder="Price" style={inputStyle} />
                         <input type="file" accept="image/*" onChange={handlePostImageUpload} />
-                        {postData.image && <img src={postData.image} alt="Preview" style={{ width: "100%", maxHeight: "180px", objectFit: "cover", borderRadius: "8px" }} />}
-
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px", gap: "10px" }}>
+                        {postData.image && <img src={postData.image} alt="preview" style={{ maxWidth: "100%" }} />}
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                             <button onClick={() => setPostOpen(false)} style={cancelButton}>Cancel</button>
-                            <button onClick={handlePostSubmit} style={buttonStyle}>
-                                Post
-                            </button>
+                            <button onClick={handlePostSubmit} style={buttonStyle}>Post</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Posts */}
-            <div style={{ padding: "30px", width: "100%", maxWidth: "700px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #ddd", paddingBottom: "10px", marginBottom: "10px" }}>
-                    <h3 style={{ fontSize: "20px" }}>My Posts</h3>
-                    <button onClick={() => setPostOpen(true)} style={buttonStyle}>Add New Post</button>
-                </div>
-
-                {posts.length === 0 ? (
-                    <p style={{ color: "#888" }}>No posts yet.</p>
-                ) : (
-                    posts.map((post) => (
-                        <div key={post.id} style={{ backgroundColor: "white", padding: "15px", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", marginBottom: "20px" }}>
-                            <img src={post.image} alt={post.title} style={{ width: "100%", maxHeight: "250px", objectFit: "cover", borderRadius: "6px" }} />
-                            <h4 style={{ marginTop: "10px" }}>{post.title}</h4>
-                            <p style={{ color: "#555" }}>{post.description}</p>
-                            <strong style={{ color: "#1da1f2" }}>RM {post.price}</strong>
+            {/* Edit Post Modal */}
+            {editPostOpen && (
+                <div style={modalOverlay}>
+                    <div style={modalBox}>
+                        <h3>Edit Post</h3>
+                        <input name="title" value={editPostData.title} onChange={handleEditPostChange} placeholder="Title" style={inputStyle} />
+                        <textarea name="description" value={editPostData.description} onChange={handleEditPostChange} placeholder="Description" rows="3" style={inputStyle} />
+                        <input name="price" value={editPostData.price} onChange={handleEditPostChange} placeholder="Price" style={inputStyle} />
+                        <input name="image" value={editPostData.image} onChange={handleEditPostChange} placeholder="Image URL" style={inputStyle} />
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                            <button onClick={() => setEditPostOpen(false)} style={cancelButton}>Cancel</button>
+                            <button onClick={saveEditedPost} style={buttonStyle}>Save</button>
                         </div>
-                    ))
-                )}
-            </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Profile Modal */}
+            {editOpen && (
+                <div style={modalOverlay}>
+                    <div style={modalBox}>
+                        <h3>Edit Profile</h3>
+                        <input name="fullName" value={formData.fullName} onChange={handleEditChange} placeholder="Full Name" style={inputStyle} />
+                        <textarea name="bio" value={formData.bio} onChange={handleEditChange} placeholder="Bio" rows="2" style={inputStyle} />
+                        <input name="profilePic" value={formData.profilePic} onChange={handleEditChange} placeholder="Profile Pic URL" style={inputStyle} />
+                        <input type="file" name="profilePic" onChange={handleFileChange} />
+                        <input name="banner" value={formData.banner} onChange={handleEditChange} placeholder="Banner URL" style={inputStyle} />
+                        <input type="file" name="banner" onChange={handleFileChange} />
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                            <button onClick={() => setEditOpen(false)} style={cancelButton}>Cancel</button>
+                            <button onClick={saveChanges} style={buttonStyle}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
