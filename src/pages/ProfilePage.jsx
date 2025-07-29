@@ -1,9 +1,47 @@
 import React, { useState, useEffect } from "react";
 import { db, storage } from "../firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getAuth } from "firebase/auth";
 
 function ProfilePage() {
+    // Post modal state
+    const [postOpen, setPostOpen] = useState(false);
+    const [postData, setPostData] = useState({
+        title: "",
+        description: "",
+        price: "",
+        image: ""
+    });
+
+    // Handle post form changes
+    const handlePostChange = (e) => {
+        const { name, value } = e.target;
+        setPostData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    // Image upload for post
+    const handlePostImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setPostData((prev) => ({ ...prev, image: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Save new post (you can later extend this to save to Firestore)
+    const savePost = () => {
+        console.log("New post:", postData);
+        setPostOpen(false);
+        // Clear post data if needed
+    };
+
+    const userId = getAuth().currentUser.uid;
+    const userRef = doc(db, "users", userId);
+
     const [profile, setProfile] = useState({
         username: "vintage_lover",
         fullName: "Retro Enthusiast",
@@ -19,8 +57,7 @@ function ProfilePage() {
 
     useEffect(() => {
         const fetchProfile = async () => {
-            const docRef = doc(db, "users", profile.username);
-            const docSnap = await getDoc(docRef);
+            const docSnap = await getDoc(userRef);
             if (docSnap.exists()) {
                 setProfile(docSnap.data());
                 setFormData(docSnap.data());
@@ -36,24 +73,18 @@ function ProfilePage() {
 
     const handleFileChange = async (e) => {
         const { name, files } = e.target;
-        if (files && files[0]) {
-            const fileRef = ref(storage, `profiles/${profile.username}/${name}`);
+        if (files[0]) {
+            const fileRef = ref(storage, `${userId}/${name}`);
             await uploadBytes(fileRef, files[0]);
             const url = await getDownloadURL(fileRef);
-            setFormData(prev => ({ ...prev, [name]: url }));
+            setFormData((prev) => ({ ...prev, [name]: url }));
         }
     };
 
     const saveChanges = async () => {
-        try {
-            await setDoc(doc(db, "users", profile.username), {
-                ...formData
-            });
-            setProfile(formData);
-            setEditOpen(false);
-        } catch (error) {
-            console.error("Error saving profile:", error);
-        }
+        await setDoc(userRef, formData);
+        setProfile(formData);
+        setEditOpen(false);
     };
 
     const modalOverlay = {
@@ -197,6 +228,7 @@ function ProfilePage() {
                             name="profilePic"
                             accept="image/*"
                             onChange={handleFileChange}
+                            style={{ marginBottom: "10px" }}
                         />
 
                         <label style={labelStyle}>Banner Image URL</label>
@@ -212,6 +244,7 @@ function ProfilePage() {
                             name="banner"
                             accept="image/*"
                             onChange={handleFileChange}
+                            style={{ marginBottom: "10px" }}
                         />
 
                         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px", gap: "10px" }}>
@@ -222,19 +255,83 @@ function ProfilePage() {
                 </div>
             )}
 
-            {/* Posts Placeholder */}
+            {postOpen && (
+                <div style={modalOverlay}>
+                    <div style={modalBox}>
+                        <h3>Create New Post</h3>
+
+                        <label style={labelStyle}>Title</label>
+                        <input
+                            type="text"
+                            name="title"
+                            value={postData.title}
+                            onChange={handlePostChange}
+                            style={inputStyle}
+                        />
+
+                        <label style={labelStyle}>Description</label>
+                        <textarea
+                            name="description"
+                            value={postData.description}
+                            onChange={handlePostChange}
+                            rows="3"
+                            style={{ ...inputStyle, resize: "none" }}
+                        />
+
+                        <label style={labelStyle}>Price (RM)</label>
+                        <input
+                            type="text"
+                            name="price"
+                            value={postData.price}
+                            onChange={handlePostChange}
+                            style={inputStyle}
+                        />
+
+                        <label style={labelStyle}>Image</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePostImageUpload}
+                            style={{ marginBottom: "10px" }}
+                        />
+                        {postData.image && (
+                            <img src={postData.image} alt="Preview"
+                                style={{ width: "100%", maxHeight: "180px", objectFit: "cover", borderRadius: "8px" }} />
+                        )}
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px", gap: "10px" }}>
+                            <button onClick={() => setPostOpen(false)} style={cancelButton}>Cancel</button>
+                            <button onClick={savePost} style={buttonStyle}>Post</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {/* Posts Section with Add New Post Button */}
             <div style={{ padding: "30px", width: "100%", maxWidth: "700px" }}>
                 <div style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: "10px",
-                    borderBottom: "1px solid #ddd",
-                    paddingBottom: "8px"
+                    marginBottom: "10px"
                 }}>
-                    <h3 style={{ fontSize: "20px" }}>My Posts</h3>
-                    <button style={buttonStyle}>Add New Post</button>
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: "20px",
+                        marginBottom: "10px",
+                        borderBottom: "1px solid #ddd",
+                        paddingBottom: "8px",
+                        width: "100%"
+                    }}>
+                        <h3 style={{ fontSize: "20px", marginRight: "auto" }}>My Posts</h3>
+                        <button onClick={() => setPostOpen(true)} style={buttonStyle}>Add New Post</button>
+                    </div>
+
                 </div>
+
                 <p style={{ color: "#888" }}>No posts yet.</p>
             </div>
         </div>
