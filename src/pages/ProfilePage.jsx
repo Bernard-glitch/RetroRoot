@@ -245,30 +245,80 @@ function ProfilePage() {
         <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
             {/* Profile Display */}
             <div style={{ textAlign: "center", padding: "20px" }}>
-                <img src={profile.banner} alt="banner" style={{ width: "100%", height: "200px", objectFit: "cover" }} />
-                <img src={profile.profilePic} alt="profile" style={{ width: "100px", height: "100px", borderRadius: "50%", marginTop: "-50px", border: "3px solid white" }} />
-                <h2>{profile.fullName}</h2>
-                <p>@{profile.username}</p>
-                <p>{profile.bio}</p>
-                <button onClick={() => setEditOpen(true)} style={buttonStyle}>Edit Profile</button>
-                <button onClick={() => setPostOpen(true)} style={{ ...buttonStyle, marginLeft: "10px" }}>Add New Post</button>
+                <div style={{ position: "relative" }}>
+                    <img
+                        src={profile.banner}
+                        alt="banner"
+                        style={{
+                            width: "100%",
+                            height: "200px",
+                            objectFit: "cover",
+                        }}
+                    />
+                    <img
+                        src={profile.profilePic}
+                        alt="profile"
+                        style={{
+                            width: "100px",
+                            height: "100px",
+                            borderRadius: "50%",
+                            position: "absolute",
+                            bottom: "-50px",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            border: "3px solid white",
+                        }}
+                    />
+                </div>
+
+                <div style={{ marginTop: "60px" }}>
+                    <h2 style={{ fontSize: "1.5rem" }}>{profile.fullName}</h2>
+                    <p style={{ color: "#555" }}>@{profile.username}</p>
+                    <p style={{ padding: "0 10px" }}>{profile.bio}</p>
+                    <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap", marginTop: "10px" }}>
+                        <button onClick={() => setEditOpen(true)} style={buttonStyle}>Edit Profile</button>
+                        <button onClick={() => setPostOpen(true)} style={{ ...buttonStyle, marginLeft: 0 }}>Add New Post</button>
+                    </div>
+                </div>
             </div>
 
-            {/* Posts */}
+            {/* Posts Section */}
             <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto" }}>
-                <h3>My Posts</h3>
+                <h3 style={{ fontSize: "1.2rem", marginBottom: "15px" }}>My Posts</h3>
                 {posts.length === 0 ? (
-                    <p>No posts yet.</p>
+                    <p style={{ textAlign: "center" }}>No posts yet.</p>
                 ) : (
                     posts.map((post) => (
-                        <div key={post.id} style={{ background: "#fff", borderRadius: "8px", padding: "15px", marginBottom: "15px", boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}>
-                            <img src={post.image} alt={post.title} style={{ width: "100%", height: "180px", objectFit: "cover", borderRadius: "6px" }} />
+                        <div key={post.id} style={{
+                            background: "#fff",
+                            borderRadius: "8px",
+                            padding: "15px",
+                            marginBottom: "15px",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+                        }}>
+                            <img
+                                src={post.image}
+                                alt={post.title}
+                                style={{
+                                    width: "100%",
+                                    height: "180px",
+                                    objectFit: "cover",
+                                    borderRadius: "6px"
+                                }}
+                            />
                             <h4>{post.title}</h4>
                             <p>{post.description}</p>
                             <p><strong>RM {post.price}</strong></p>
-                            <div style={{ display: "flex", gap: "10px" }}>
+                            <div style={{
+                                display: "flex",
+                                gap: "10px",
+                                flexWrap: "wrap"
+                            }}>
                                 <button style={buttonStyle} onClick={() => handleEditPostClick(post)}>Edit</button>
-                                <button style={{ ...buttonStyle, backgroundColor: "#ff4d4d" }} onClick={() => deletePost(post.id)}>Delete</button>
+                                <button
+                                    style={{ ...buttonStyle, backgroundColor: "#ff4d4d" }}
+                                    onClick={() => deletePost(post.id)}
+                                >Delete</button>
                             </div>
                         </div>
                     ))
