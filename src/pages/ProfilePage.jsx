@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import { db, storage } from "../firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function ProfilePage() {
     const [profile, setProfile] = useState({
@@ -15,25 +17,43 @@ function ProfilePage() {
     const [editOpen, setEditOpen] = useState(false);
     const [formData, setFormData] = useState(profile);
 
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const docRef = doc(db, "users", profile.username);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setProfile(docSnap.data());
+                setFormData(docSnap.data());
+            }
+        };
+        fetchProfile();
+    }, []);
+
     const handleEditChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const { name, files } = e.target;
         if (files && files[0]) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                setFormData((prev) => ({ ...prev, [name]: reader.result }));
-            };
-            reader.readAsDataURL(files[0]);
+            const fileRef = ref(storage, `profiles/${profile.username}/${name}`);
+            await uploadBytes(fileRef, files[0]);
+            const url = await getDownloadURL(fileRef);
+            setFormData(prev => ({ ...prev, [name]: url }));
         }
     };
 
-    const saveChanges = () => {
-        setProfile(formData);
-        setEditOpen(false);
+    const saveChanges = async () => {
+        try {
+            await setDoc(doc(db, "users", profile.username), {
+                ...formData
+            });
+            setProfile(formData);
+            setEditOpen(false);
+        } catch (error) {
+            console.error("Error saving profile:", error);
+        }
     };
 
     const modalOverlay = {
@@ -177,7 +197,6 @@ function ProfilePage() {
                             name="profilePic"
                             accept="image/*"
                             onChange={handleFileChange}
-                            style={{ marginBottom: "10px" }}
                         />
 
                         <label style={labelStyle}>Banner Image URL</label>
@@ -193,7 +212,6 @@ function ProfilePage() {
                             name="banner"
                             accept="image/*"
                             onChange={handleFileChange}
-                            style={{ marginBottom: "10px" }}
                         />
 
                         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px", gap: "10px" }}>
@@ -206,12 +224,17 @@ function ProfilePage() {
 
             {/* Posts Placeholder */}
             <div style={{ padding: "30px", width: "100%", maxWidth: "700px" }}>
-                <h3 style={{
+                <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                     marginBottom: "10px",
-                    fontSize: "20px",
                     borderBottom: "1px solid #ddd",
                     paddingBottom: "8px"
-                }}>My Posts</h3>
+                }}>
+                    <h3 style={{ fontSize: "20px" }}>My Posts</h3>
+                    <button style={buttonStyle}>Add New Post</button>
+                </div>
                 <p style={{ color: "#888" }}>No posts yet.</p>
             </div>
         </div>
