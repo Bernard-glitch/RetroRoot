@@ -15,12 +15,12 @@ import {
     uploadBytes,
     getDownloadURL,
 } from "firebase/storage";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Sidebar from "../component/SideBar";
 
 function ProfilePage() {
     const auth = getAuth();
-    const userId = auth.currentUser?.uid;
+    const [userId, setUserId] = useState(null);
 
     const [profile, setProfile] = useState({
         username: "vintage_lover",
@@ -41,6 +41,7 @@ function ProfilePage() {
         description: "",
         price: "",
         image: "",
+        imageFile: null,
     });
 
     const [posts, setPosts] = useState([]);
@@ -54,16 +55,20 @@ function ProfilePage() {
         image: "",
     });
 
-    const userRef = userId ? doc(db, "users", userId) : null;
-
     useEffect(() => {
-        if (userId) {
-            fetchProfile();
-            fetchPosts();
-        }
-    }, [userId]);
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUserId(user.uid);
+                fetchProfile(user.uid);
+                fetchPosts(user.uid);
+            }
+        });
 
-    const fetchProfile = async () => {
+        return () => unsubscribe();
+    }, []);
+
+    const fetchProfile = async (uid) => {
+        const userRef = doc(db, "users", uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
             setProfile(docSnap.data());
@@ -71,12 +76,12 @@ function ProfilePage() {
         }
     };
 
-    const fetchPosts = async () => {
+    const fetchPosts = async (uid) => {
         const querySnapshot = await getDocs(collection(db, "posts"));
         const userPosts = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            if (data.userId === userId) {
+            if (data.userId === uid) {
                 userPosts.push({ id: doc.id, ...data });
             }
         });
@@ -91,38 +96,37 @@ function ProfilePage() {
     const handlePostImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                setPostData((prev) => ({ ...prev, image: reader.result }));
-            };
-            reader.readAsDataURL(file);
+            setPostData((prev) => ({
+                ...prev,
+                imageFile: file,
+                image: URL.createObjectURL(file),
+            }));
         }
     };
 
     const handlePostSubmit = async () => {
-        if (
-            !postData.title ||
-            !postData.description ||
-            !postData.price ||
-            !postData.image
-        ) {
+        if (!postData.title || !postData.description || !postData.price || !postData.imageFile) {
             alert("Please fill in all fields.");
             return;
         }
 
         try {
+            const fileRef = ref(storage, `${userId}/posts/${postData.imageFile.name}`);
+            await uploadBytes(fileRef, postData.imageFile);
+            const imageUrl = await getDownloadURL(fileRef);
+
             await addDoc(collection(db, "posts"), {
                 userId,
                 title: postData.title,
                 description: postData.description,
                 price: postData.price,
-                image: postData.image,
+                image: imageUrl,
                 createdAt: serverTimestamp(),
             });
 
-            setPostData({ title: "", description: "", price: "", image: "" });
+            setPostData({ title: "", description: "", price: "", image: "", imageFile: null });
             setPostOpen(false);
-            fetchPosts();
+            fetchPosts(userId);
         } catch (error) {
             console.error("Error posting item:", error);
             alert("Failed to post item.");
@@ -157,7 +161,7 @@ function ProfilePage() {
 
             setEditPostOpen(false);
             setEditingPostId(null);
-            fetchPosts();
+            fetchPosts(userId);
         } catch (error) {
             console.error("Error updating post:", error);
             alert("Failed to update post.");
@@ -193,11 +197,13 @@ function ProfilePage() {
     };
 
     const saveChanges = async () => {
+        const userRef = doc(db, "users", userId);
         await setDoc(userRef, formData);
         setProfile(formData);
         setEditOpen(false);
     };
 
+    // Modal + UI styles (same as before)
     const modalOverlay = {
         position: "fixed",
         top: 0,
