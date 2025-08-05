@@ -69,7 +69,7 @@ function ProfilePage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [auth]);
 
     const fetchProfile = async (uid) => {
         try {
@@ -100,7 +100,7 @@ function ProfilePage() {
             });
             // Sort posts by creation date (newest first)
             userPosts.sort((a, b) => {
-                if (a.createdAt && b.createdAt) {
+                if (a.createdAt && b.createdAt && a.createdAt.toDate && b.createdAt.toDate) {
                     return b.createdAt.toDate() - a.createdAt.toDate();
                 }
                 return 0;
@@ -290,7 +290,11 @@ function ProfilePage() {
     };
 
     const formatPrice = (price) => {
-        return typeof price === 'number' ? price.toFixed(2) : parseFloat(price || 0).toFixed(2);
+        if (typeof price === 'number') {
+            return price.toFixed(2);
+        }
+        const numPrice = parseFloat(price || 0);
+        return isNaN(numPrice) ? '0.00' : numPrice.toFixed(2);
     };
 
     if (loading) {
@@ -457,8 +461,13 @@ function ProfilePage() {
                                 </div>
 
                                 <div className="p-6">
-                                    <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-1">{post.title}</h3>
-                                    <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">{post.description}</p>
+                                    <h3 className="font-bold text-lg text-gray-900 mb-2 truncate">{post.title}</h3>
+                                    <p className="text-gray-600 text-sm leading-relaxed" style={{
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden'
+                                    }}>{post.description}</p>
                                 </div>
                             </div>
                         ))}
@@ -724,7 +733,7 @@ function ProfilePage() {
                                     disabled={uploading}
                                     maxLength={200}
                                 />
-                                <p className="text-xs text-gray-500 mt-1">{formData.bio?.length || 0}/200 characters</p>
+                                <p className="text-xs text-gray-500 mt-1">{(formData.bio || '').length}/200 characters</p>
                             </div>
 
                             <div>
