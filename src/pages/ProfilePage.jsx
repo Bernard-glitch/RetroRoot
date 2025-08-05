@@ -15,14 +15,12 @@ import {
     uploadBytes,
     getDownloadURL,
 } from "firebase/storage";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Sidebar from "../component/SideBar";
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 function ProfilePage() {
     const auth = getAuth();
-    const userId = auth.currentUser?.uid;
+    const [userId, setUserId] = useState(null);
 
     const [profile, setProfile] = useState({
         username: "vintage_lover",
@@ -35,15 +33,20 @@ function ProfilePage() {
     });
 
     const [formData, setFormData] = useState(profile);
+    const [editOpen, setEditOpen] = useState(false);
+
+    const [postOpen, setPostOpen] = useState(false);
     const [postData, setPostData] = useState({
         title: "",
         description: "",
         price: "",
         image: "",
+        imageFile: null,
     });
 
     const [posts, setPosts] = useState([]);
 
+    const [editPostOpen, setEditPostOpen] = useState(false);
     const [editingPostId, setEditingPostId] = useState(null);
     const [editPostData, setEditPostData] = useState({
         title: "",
@@ -52,20 +55,20 @@ function ProfilePage() {
         image: "",
     });
 
-    const userRef = userId ? doc(db, "users", userId) : null;
-
     useEffect(() => {
-        const loadData = async () => {
-            if (userId && userRef) {
-                await fetchProfile();
-                await fetchPosts();
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUserId(user.uid);
+                fetchProfile(user.uid);
+                fetchPosts(user.uid);
             }
-        };
+        });
 
-        loadData();
-    }, [userId, userRef]);
+        return () => unsubscribe();
+    }, []);
 
-    const fetchProfile = async () => {
+    const fetchProfile = async (uid) => {
+        const userRef = doc(db, "users", uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
             setProfile(docSnap.data());
@@ -73,12 +76,12 @@ function ProfilePage() {
         }
     };
 
-    const fetchPosts = async () => {
+    const fetchPosts = async (uid) => {
         const querySnapshot = await getDocs(collection(db, "posts"));
         const userPosts = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            if (data.userId === userId) {
+            if (data.userId === uid) {
                 userPosts.push({ id: doc.id, ...data });
             }
         });
@@ -93,32 +96,37 @@ function ProfilePage() {
     const handlePostImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                setPostData((prev) => ({ ...prev, image: reader.result }));
-            };
-            reader.readAsDataURL(file);
+            setPostData((prev) => ({
+                ...prev,
+                imageFile: file,
+                image: URL.createObjectURL(file),
+            }));
         }
     };
 
     const handlePostSubmit = async () => {
-        if (!postData.title || !postData.description || !postData.price || !postData.image) {
+        if (!postData.title || !postData.description || !postData.price || !postData.imageFile) {
             alert("Please fill in all fields.");
             return;
         }
 
         try {
+            const fileRef = ref(storage, `${userId}/posts/${postData.imageFile.name}`);
+            await uploadBytes(fileRef, postData.imageFile);
+            const imageUrl = await getDownloadURL(fileRef);
+
             await addDoc(collection(db, "posts"), {
                 userId,
                 title: postData.title,
                 description: postData.description,
                 price: postData.price,
-                image: postData.image,
+                image: imageUrl,
                 createdAt: serverTimestamp(),
             });
 
-            setPostData({ title: "", description: "", price: "", image: "" });
-            fetchPosts();
+            setPostData({ title: "", description: "", price: "", image: "", imageFile: null });
+            setPostOpen(false);
+            fetchPosts(userId);
         } catch (error) {
             console.error("Error posting item:", error);
             alert("Failed to post item.");
@@ -133,7 +141,7 @@ function ProfilePage() {
             price: post.price,
             image: post.image,
         });
-        new window.bootstrap.Modal(document.getElementById('editPostModal')).show();
+        setEditPostOpen(true);
     };
 
     const handleEditPostChange = (e) => {
@@ -151,9 +159,9 @@ function ProfilePage() {
                 updatedAt: serverTimestamp(),
             });
 
-            fetchPosts();
-            const modal = window.bootstrap.Modal.getInstance(document.getElementById('editPostModal'));
-            modal.hide();
+            setEditPostOpen(false);
+            setEditingPostId(null);
+            fetchPosts(userId);
         } catch (error) {
             console.error("Error updating post:", error);
             alert("Failed to update post.");
@@ -189,118 +197,193 @@ function ProfilePage() {
     };
 
     const saveChanges = async () => {
+        const userRef = doc(db, "users", userId);
         await setDoc(userRef, formData);
         setProfile(formData);
-        const modal = window.bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
-        modal.hide();
+        setEditOpen(false);
     };
 
+    // Modal + UI styles (same as before)
+    const modalOverlay = {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
+    };
+
+    const modalBox = {
+        backgroundColor: "#fff",
+        padding: "30px",
+        borderRadius: "10px",
+        width: "90%",
+        maxWidth: "500px",
+        boxShadow: "0 8px 25px rgba(0, 0, 0, 0.2)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "15px",
+    };
+
+    const inputStyle = {
+        width: "100%",
+        padding: "10px",
+        borderRadius: "6px",
+        border: "1px solid #ccc",
+        fontSize: "14px",
+    };
+    const buttonStyle = {
+        padding: "8px 16px",
+        borderRadius: "20px",
+        border: "none",
+        backgroundColor: "#1da1f2",
+        color: "#fff",
+        cursor: "pointer",
+        fontWeight: "600",
+    };
+    const cancelButton = { ...buttonStyle, backgroundColor: "#aaa" };
+
     return (
-        <div className="container py-4">
-            <div className="text-center mb-5">
-                <div className="position-relative">
-                    <img src={profile.banner} className="img-fluid w-100" style={{ height: "200px", objectFit: "cover" }} alt="Banner" />
-                    <img src={profile.profilePic} className="rounded-circle position-absolute top-100 start-50 translate-middle border border-white" style={{ width: "100px", height: "100px" }} alt="Profile" />
+        <div style={{ fontFamily: "Segoe UI, sans-serif" }}>
+            {/* Profile Display */}
+            <div style={{ textAlign: "center", padding: "20px" }}>
+                <div style={{ position: "relative" }}>
+                    <img
+                        src={profile.banner}
+                        alt="banner"
+                        style={{
+                            width: "100%",
+                            height: "200px",
+                            objectFit: "cover",
+                        }}
+                    />
+                    <img
+                        src={profile.profilePic}
+                        alt="profile"
+                        style={{
+                            width: "100px",
+                            height: "100px",
+                            borderRadius: "50%",
+                            position: "absolute",
+                            bottom: "-50px",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            border: "3px solid white",
+                        }}
+                    />
                 </div>
-                <div className="mt-5">
-                    <h2>{profile.fullName}</h2>
-                    <p className="text-muted">@{profile.username}</p>
-                    <p>{profile.bio}</p>
-                    <div className="d-flex justify-content-center gap-2 flex-wrap">
-                        <button className="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">Edit Profile</button>
-                        <button className="btn btn-success" data-bs-toggle="modal" data-bs-target="#postModal">Add New Post</button>
+
+                <div style={{ marginTop: "60px" }}>
+                    <h2 style={{ fontSize: "1.5rem" }}>{profile.fullName}</h2>
+                    <p style={{ color: "#555" }}>@{profile.username}</p>
+                    <p style={{ padding: "0 10px" }}>{profile.bio}</p>
+                    <div style={{ display: "flex", justifyContent: "center", gap: "10px", flexWrap: "wrap", marginTop: "10px" }}>
+                        <button onClick={() => setEditOpen(true)} style={buttonStyle}>Edit Profile</button>
+                        <button onClick={() => setPostOpen(true)} style={{ ...buttonStyle, marginLeft: 0 }}>Add New Post</button>
                     </div>
                 </div>
             </div>
 
-            <div className="mx-auto" style={{ maxWidth: '700px' }}>
-                <h3 className="mb-3">My Posts</h3>
+            {/* Posts Section */}
+            <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto" }}>
+                <h3 style={{ fontSize: "1.2rem", marginBottom: "15px" }}>My Posts</h3>
                 {posts.length === 0 ? (
-                    <p className="text-center">No posts yet.</p>
+                    <p style={{ textAlign: "center" }}>No posts yet.</p>
                 ) : (
-                    posts.map(post => (
-                        <div key={post.id} className="card mb-4">
-                            <img src={post.image} className="card-img-top" alt={post.title} style={{ height: '180px', objectFit: 'cover' }} />
-                            <div className="card-body">
-                                <h5 className="card-title">{post.title}</h5>
-                                <p className="card-text">{post.description}</p>
-                                <p className="fw-bold">RM {post.price}</p>
-                                <div className="d-flex gap-2">
-                                    <button className="btn btn-outline-primary" onClick={() => handleEditPostClick(post)}>Edit</button>
-                                    <button className="btn btn-outline-danger" onClick={() => deletePost(post.id)}>Delete</button>
-                                </div>
+                    posts.map((post) => (
+                        <div key={post.id} style={{
+                            background: "#fff",
+                            borderRadius: "8px",
+                            padding: "15px",
+                            marginBottom: "15px",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+                        }}>
+                            <img
+                                src={post.image}
+                                alt={post.title}
+                                style={{
+                                    width: "100%",
+                                    height: "180px",
+                                    objectFit: "cover",
+                                    borderRadius: "6px"
+                                }}
+                            />
+                            <h4>{post.title}</h4>
+                            <p>{post.description}</p>
+                            <p><strong>RM {post.price}</strong></p>
+                            <div style={{
+                                display: "flex",
+                                gap: "10px",
+                                flexWrap: "wrap"
+                            }}>
+                                <button style={buttonStyle} onClick={() => handleEditPostClick(post)}>Edit</button>
+                                <button
+                                    style={{ ...buttonStyle, backgroundColor: "#ff4d4d" }}
+                                    onClick={() => deletePost(post.id)}
+                                >Delete</button>
                             </div>
                         </div>
                     ))
                 )}
             </div>
 
-            {/* Modals */}
-            <div className="modal fade" id="editProfileModal" tabIndex="-1" aria-hidden="true">
-                <div className="modal-dialog">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h5 className="modal-title">Edit Profile</h5>
-                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div className="modal-body">
-                            <input name="fullName" value={formData.fullName} onChange={handleEditChange} className="form-control mb-2" placeholder="Full Name" />
-                            <textarea name="bio" value={formData.bio} onChange={handleEditChange} className="form-control mb-2" placeholder="Bio" rows="2" />
-                            <input name="profilePic" value={formData.profilePic} onChange={handleEditChange} className="form-control mb-2" placeholder="Profile Pic URL" />
-                            <input type="file" name="profilePic" onChange={handleFileChange} className="form-control mb-2" />
-                            <input name="banner" value={formData.banner} onChange={handleEditChange} className="form-control mb-2" placeholder="Banner URL" />
-                            <input type="file" name="banner" onChange={handleFileChange} className="form-control mb-2" />
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" className="btn btn-primary" onClick={saveChanges}>Save</button>
+            {/* Post Modal */}
+            {postOpen && (
+                <div style={modalOverlay}>
+                    <div style={modalBox}>
+                        <h3>Create New Post</h3>
+                        <input name="title" value={postData.title} onChange={handlePostChange} placeholder="Title" style={inputStyle} />
+                        <textarea name="description" value={postData.description} onChange={handlePostChange} placeholder="Description" rows="3" style={inputStyle} />
+                        <input name="price" value={postData.price} onChange={handlePostChange} placeholder="Price" style={inputStyle} />
+                        <input type="file" accept="image/*" onChange={handlePostImageUpload} />
+                        {postData.image && <img src={postData.image} alt="preview" style={{ maxWidth: "100%" }} />}
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                            <button onClick={() => setPostOpen(false)} style={cancelButton}>Cancel</button>
+                            <button onClick={handlePostSubmit} style={buttonStyle}>Post</button>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            <div className="modal fade" id="postModal" tabIndex="-1" aria-hidden="true">
-                <div className="modal-dialog">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h5 className="modal-title">Create New Post</h5>
-                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div className="modal-body">
-                            <input name="title" value={postData.title} onChange={handlePostChange} className="form-control mb-2" placeholder="Title" />
-                            <textarea name="description" value={postData.description} onChange={handlePostChange} className="form-control mb-2" placeholder="Description" rows="3" />
-                            <input name="price" value={postData.price} onChange={handlePostChange} className="form-control mb-2" placeholder="Price" />
-                            <input type="file" accept="image/*" onChange={handlePostImageUpload} className="form-control mb-2" />
-                            {postData.image && <img src={postData.image} alt="preview" className="img-fluid" />}
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" className="btn btn-success" onClick={handlePostSubmit}>Post</button>
+            {/* Edit Post Modal */}
+            {editPostOpen && (
+                <div style={modalOverlay}>
+                    <div style={modalBox}>
+                        <h3>Edit Post</h3>
+                        <input name="title" value={editPostData.title} onChange={handleEditPostChange} placeholder="Title" style={inputStyle} />
+                        <textarea name="description" value={editPostData.description} onChange={handleEditPostChange} placeholder="Description" rows="3" style={inputStyle} />
+                        <input name="price" value={editPostData.price} onChange={handleEditPostChange} placeholder="Price" style={inputStyle} />
+                        <input name="image" value={editPostData.image} onChange={handleEditPostChange} placeholder="Image URL" style={inputStyle} />
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                            <button onClick={() => setEditPostOpen(false)} style={cancelButton}>Cancel</button>
+                            <button onClick={saveEditedPost} style={buttonStyle}>Save</button>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            <div className="modal fade" id="editPostModal" tabIndex="-1" aria-hidden="true">
-                <div className="modal-dialog">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h5 className="modal-title">Edit Post</h5>
-                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div className="modal-body">
-                            <input name="title" value={editPostData.title} onChange={handleEditPostChange} className="form-control mb-2" placeholder="Title" />
-                            <textarea name="description" value={editPostData.description} onChange={handleEditPostChange} className="form-control mb-2" placeholder="Description" rows="3" />
-                            <input name="price" value={editPostData.price} onChange={handleEditPostChange} className="form-control mb-2" placeholder="Price" />
-                            <input name="image" value={editPostData.image} onChange={handleEditPostChange} className="form-control mb-2" placeholder="Image URL" />
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" className="btn btn-primary" onClick={saveEditedPost}>Save</button>
+            {/* Edit Profile Modal */}
+            {editOpen && (
+                <div style={modalOverlay}>
+                    <div style={modalBox}>
+                        <h3>Edit Profile</h3>
+                        <input name="fullName" value={formData.fullName} onChange={handleEditChange} placeholder="Full Name" style={inputStyle} />
+                        <textarea name="bio" value={formData.bio} onChange={handleEditChange} placeholder="Bio" rows="2" style={inputStyle} />
+                        <input name="profilePic" value={formData.profilePic} onChange={handleEditChange} placeholder="Profile Pic URL" style={inputStyle} />
+                        <input type="file" name="profilePic" onChange={handleFileChange} />
+                        <input name="banner" value={formData.banner} onChange={handleEditChange} placeholder="Banner URL" style={inputStyle} />
+                        <input type="file" name="banner" onChange={handleFileChange} />
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                            <button onClick={() => setEditOpen(false)} style={cancelButton}>Cancel</button>
+                            <button onClick={saveChanges} style={buttonStyle}>Save</button>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
