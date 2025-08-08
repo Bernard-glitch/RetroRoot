@@ -355,8 +355,6 @@ function Login() {
                     fontSize: "0.85rem",
                     color: vintageTheme.colors.darkBrown
                 }}>
-                    <strong>Implementation Note:</strong> Replace the demo handleLogin function with your original Firebase/API logic,
-                    and replace handleSignUp with navigate("/signup").
                 </div>
             </div>
         </div>
