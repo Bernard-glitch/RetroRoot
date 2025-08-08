@@ -355,6 +355,7 @@ function Login() {
                     fontSize: "0.85rem",
                     color: vintageTheme.colors.darkBrown
                 }}>
+                    <strong>Implementation Note:</strong>You can't login without signing up("/signup").
                 </div>
             </div>
         </div>
