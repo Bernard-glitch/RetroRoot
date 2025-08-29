@@ -1,13 +1,18 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./firebase";
 import { UserPlus, Mail, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+
 
 function Signup() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [message, setMessage] = useState("");
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
 
-    // Vintage color palette
     const vintageTheme = {
         colors: {
             primary: '#8B4513', // Saddle brown
@@ -24,15 +29,15 @@ function Signup() {
         }
     };
 
-    const validatePassword = (password) => {
-        if (password.length < 6) {
-            return "Password must be at least 6 characters long.";
-        }
-        return null;
-    };
-
     const handleSignup = async (e) => {
         e.preventDefault();
+
+        function validatePassword(password) {
+            if (password.length < 6) {
+                return "Password must be at least 6 characters long.";
+            }
+            return null;
+        }
 
         const error = validatePassword(password);
         if (error) {
@@ -40,8 +45,6 @@ function Signup() {
             return;
         }
 
-        // Your original Firebase and API logic would go here
-        /*
         try {
             const res = await axios.post(
                 "https://retro-root-api.vercel.app/signup",
@@ -51,11 +54,14 @@ function Signup() {
                 try {
                     const firebaseRes = await createUserWithEmailAndPassword(auth, email, password);
                     console.log(firebaseRes);
+
                     console.log("Profile updated successfully");
+
                 } catch (err) {
                     console.error("Error in Firebase sign up:", err);
                 }
             }
+            ;
 
             setMessage(res.data.message || "Signup successful!");
             console.log("Signed up:", res.data);
@@ -65,9 +71,6 @@ function Signup() {
         } catch (err) {
             setMessage(err.response?.data?.message || " Signup failed");
         }
-        */
-
-        // Demo functionality for the preview
         if (email && password && password.length >= 6) {
             setMessage("Account created successfully! Redirecting to login...");
         } else {
