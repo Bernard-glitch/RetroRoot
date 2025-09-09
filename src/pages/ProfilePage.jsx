@@ -81,7 +81,7 @@ function ProfilePage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [auth]);
 
     const fetchProfile = async (uid) => {
         const userRef = doc(db, "users", uid);

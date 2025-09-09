@@ -79,7 +79,7 @@ function Signup() {
     };
 
     const handleBackToLogin = () => {
-        // Your original navigate("/") would go here
+        navigate("/");
         setMessage("Redirecting to login page...");
     };
 
@@ -463,8 +463,7 @@ function Signup() {
                     fontSize: "0.85rem",
                     color: vintageTheme.colors.darkBrown
                 }}>
-                    <strong>Implementation Note:</strong> Replace the demo handleSignup function with your original Firebase/API logic,
-                    and replace handleBackToLogin with navigate("/").
+
                 </div>
             </div>
         </div>
