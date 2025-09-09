@@ -291,22 +291,6 @@ function Signup() {
             <div style={formContainerStyle}>
                 <div style={decorativeElementStyle}></div>
 
-                <button
-                    onClick={handleBackToLogin}
-                    style={backButtonStyle}
-                    onMouseOver={(e) => {
-                        e.target.style.color = vintageTheme.colors.primary;
-                        e.target.style.transform = "translateX(-3px)";
-                    }}
-                    onMouseOut={(e) => {
-                        e.target.style.color = vintageTheme.colors.secondary;
-                        e.target.style.transform = "translateX(0)";
-                    }}
-                >
-                    <ArrowLeft size={16} />
-                    Back to Login
-                </button>
-
                 <h1 style={titleStyle}>
                     Join Our Community
                 </h1>
