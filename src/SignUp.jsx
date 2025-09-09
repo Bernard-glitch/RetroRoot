@@ -122,21 +122,6 @@ function Signup() {
         background: `linear-gradient(90deg, ${vintageTheme.colors.gold} 0%, ${vintageTheme.colors.primary} 50%, ${vintageTheme.colors.gold} 100%)`
     };
 
-    const backButtonStyle = {
-        position: "absolute",
-        top: "1.5rem",
-        left: "1.5rem",
-        background: "transparent",
-        border: "none",
-        color: vintageTheme.colors.secondary,
-        cursor: "pointer",
-        fontSize: "0.9rem",
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
-        transition: "all 0.3s ease",
-        fontFamily: "inherit"
-    };
 
     const titleStyle = {
         textAlign: "center",
