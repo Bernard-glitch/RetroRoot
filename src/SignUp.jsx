@@ -421,9 +421,6 @@ function Signup() {
                         {message}
                     </div>
                 )}
-
-
-
             </div>
         </div>
     );
