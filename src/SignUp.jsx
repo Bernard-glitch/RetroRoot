@@ -422,18 +422,8 @@ function Signup() {
                     </div>
                 )}
 
-                {/* Instructions for implementation */}
-                <div style={{
-                    marginTop: "2rem",
-                    padding: "1rem",
-                    backgroundColor: `${vintageTheme.colors.gold}20`,
-                    borderRadius: "8px",
-                    border: `1px solid ${vintageTheme.colors.gold}`,
-                    fontSize: "0.85rem",
-                    color: vintageTheme.colors.darkBrown
-                }}>
 
-                </div>
+
             </div>
         </div>
     );
