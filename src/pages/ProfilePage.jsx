@@ -20,6 +20,7 @@ import { Camera, Edit3, Plus, Trash2, Save, X } from "lucide-react";
 import Sidebar from "../component/SideBar";
 
 function ProfilePage() {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const auth = getAuth();
     const [userId, setUserId] = useState(null);
 
@@ -411,362 +412,378 @@ function ProfilePage() {
     };
 
     return (
-        <div style={containerStyle}>
-            <Sidebar />
 
-            {/* Profile Section */}
-            <div style={profileContainerStyle}>
-                <div style={bannerStyle}>
-                    <div style={bannerOverlay}></div>
-                    <img
-                        src={profile.profilePic || "https://via.placeholder.com/120x120?text=Profile"}
-                        alt="Profile"
-                        style={profilePicStyle}
-                    />
-                </div>
+        <div>
+            {/* Button to open sidebar */}
+            <button
+                className="btn btn-warning"
+                onClick={() => setSidebarOpen(true)}
+            >
+                Open Sidebar
+            </button>
 
-                <div style={profileInfoStyle}>
-                    <h1 style={nameStyle}>{profile.fullName || "Your Name"}</h1>
-                    <p style={usernameStyle}>@{profile.username}</p>
-                    <p style={bioStyle}>{profile.bio || "Tell us about yourself and your vintage finds..."}</p>
+            {/* Render Sidebar only if open */}
+            {sidebarOpen && (
+                <Sidebar onClose={() => setSidebarOpen(false)} />
+            )}
 
-                    <div style={buttonGroupStyle}>
-                        <button
-                            onClick={() => setEditOpen(true)}
-                            style={vintageButtonStyle}
-                            onMouseOver={(e) => {
-                                e.target.style.backgroundColor = vintageTheme.colors.secondary;
-                                e.target.style.transform = 'translateY(-2px)';
-                                e.target.style.boxShadow = '0 6px 20px rgba(139, 69, 19, 0.4)';
-                            }}
-                            onMouseOut={(e) => {
-                                e.target.style.backgroundColor = vintageTheme.colors.primary;
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = '0 4px 15px rgba(139, 69, 19, 0.3)';
-                            }}
-                        >
-                            <Edit3 size={16} />
-                            Edit Profile
-                        </button>
-                        <button
-                            onClick={() => setPostOpen(true)}
-                            style={{ ...vintageButtonStyle, backgroundColor: vintageTheme.colors.sage, borderColor: vintageTheme.colors.sage }}
-                            onMouseOver={(e) => {
-                                e.target.style.backgroundColor = vintageTheme.colors.secondary;
-                                e.target.style.transform = 'translateY(-2px)';
-                                e.target.style.boxShadow = '0 6px 20px rgba(139, 69, 19, 0.4)';
-                            }}
-                            onMouseOut={(e) => {
-                                e.target.style.backgroundColor = vintageTheme.colors.sage;
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = '0 4px 15px rgba(139, 69, 19, 0.3)';
-                            }}
-                        >
-                            <Plus size={16} />
-                            New Listing
-                        </button>
+            <div style={containerStyle}>
+                <Sidebar />
+
+                {/* Profile Section */}
+                <div style={profileContainerStyle}>
+                    <div style={bannerStyle}>
+                        <div style={bannerOverlay}></div>
+                        <img
+                            src={profile.profilePic || "https://via.placeholder.com/120x120?text=Profile"}
+                            alt="Profile"
+                            style={profilePicStyle}
+                        />
+                    </div>
+
+                    <div style={profileInfoStyle}>
+                        <h1 style={nameStyle}>{profile.fullName || "Your Name"}</h1>
+                        <p style={usernameStyle}>@{profile.username}</p>
+                        <p style={bioStyle}>{profile.bio || "Tell us about yourself and your vintage finds..."}</p>
+
+                        <div style={buttonGroupStyle}>
+                            <button
+                                onClick={() => setEditOpen(true)}
+                                style={vintageButtonStyle}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = vintageTheme.colors.secondary;
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 6px 20px rgba(139, 69, 19, 0.4)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = vintageTheme.colors.primary;
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 4px 15px rgba(139, 69, 19, 0.3)';
+                                }}
+                            >
+                                <Edit3 size={16} />
+                                Edit Profile
+                            </button>
+                            <button
+                                onClick={() => setPostOpen(true)}
+                                style={{ ...vintageButtonStyle, backgroundColor: vintageTheme.colors.sage, borderColor: vintageTheme.colors.sage }}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = vintageTheme.colors.secondary;
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 6px 20px rgba(139, 69, 19, 0.4)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = vintageTheme.colors.sage;
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 4px 15px rgba(139, 69, 19, 0.3)';
+                                }}
+                            >
+                                <Plus size={16} />
+                                New Listing
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Posts Section */}
-            <div style={postsContainerStyle}>
-                <h2 style={postsSectionTitle}>My Collections</h2>
-                {posts.length === 0 ? (
-                    <div style={{
-                        textAlign: 'center',
-                        padding: '3rem',
-                        backgroundColor: vintageTheme.colors.cream,
-                        borderRadius: '15px',
-                        border: `2px solid ${vintageTheme.colors.dustyRose}`
-                    }}>
-                        <p style={{ fontSize: '1.1rem', color: vintageTheme.colors.secondary }}>
-                            No treasures listed yet. Start sharing your vintage finds!
-                        </p>
-                    </div>
-                ) : (
-                    posts.map((post) => (
-                        <div
-                            key={post.id}
-                            style={postCardStyle}
-                            onMouseOver={(e) => {
-                                e.currentTarget.style.transform = 'translateY(-4px)';
-                                e.currentTarget.style.boxShadow = '0 12px 35px rgba(139, 69, 19, 0.25)';
-                            }}
-                            onMouseOut={(e) => {
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 8px 25px rgba(139, 69, 19, 0.15)';
-                            }}
-                        >
-                            <img
-                                src={post.image}
-                                alt={post.title}
-                                style={postImageStyle}
-                            />
-                            <h3 style={{
-                                fontSize: 'clamp(1.1rem, 3vw, 1.3rem)',
-                                marginBottom: '0.5rem',
-                                color: vintageTheme.colors.primary,
-                                fontWeight: 'bold'
-                            }}>{post.title}</h3>
-                            <p style={{
-                                marginBottom: '1rem',
-                                color: vintageTheme.colors.darkBrown,
-                                fontSize: 'clamp(0.9rem, 2.5vw, 1rem)'
-                            }}>{post.description}</p>
-                            <p style={{
-                                fontSize: 'clamp(1.1rem, 3vw, 1.3rem)',
-                                fontWeight: 'bold',
-                                color: vintageTheme.colors.gold,
-                                marginBottom: '1rem'
-                            }}>RM {post.price}</p>
+                {/* Posts Section */}
+                <div style={postsContainerStyle}>
+                    <h2 style={postsSectionTitle}>My Collections</h2>
+                    {posts.length === 0 ? (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '3rem',
+                            backgroundColor: vintageTheme.colors.cream,
+                            borderRadius: '15px',
+                            border: `2px solid ${vintageTheme.colors.dustyRose}`
+                        }}>
+                            <p style={{ fontSize: '1.1rem', color: vintageTheme.colors.secondary }}>
+                                No treasures listed yet. Start sharing your vintage finds!
+                            </p>
+                        </div>
+                    ) : (
+                        posts.map((post) => (
+                            <div
+                                key={post.id}
+                                style={postCardStyle}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)';
+                                    e.currentTarget.style.boxShadow = '0 12px 35px rgba(139, 69, 19, 0.25)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(139, 69, 19, 0.15)';
+                                }}
+                            >
+                                <img
+                                    src={post.image}
+                                    alt={post.title}
+                                    style={postImageStyle}
+                                />
+                                <h3 style={{
+                                    fontSize: 'clamp(1.1rem, 3vw, 1.3rem)',
+                                    marginBottom: '0.5rem',
+                                    color: vintageTheme.colors.primary,
+                                    fontWeight: 'bold'
+                                }}>{post.title}</h3>
+                                <p style={{
+                                    marginBottom: '1rem',
+                                    color: vintageTheme.colors.darkBrown,
+                                    fontSize: 'clamp(0.9rem, 2.5vw, 1rem)'
+                                }}>{post.description}</p>
+                                <p style={{
+                                    fontSize: 'clamp(1.1rem, 3vw, 1.3rem)',
+                                    fontWeight: 'bold',
+                                    color: vintageTheme.colors.gold,
+                                    marginBottom: '1rem'
+                                }}>RM {post.price}</p>
 
-                            <div style={{
-                                display: 'flex',
-                                gap: '0.75rem',
-                                flexWrap: 'wrap'
-                            }}>
-                                <button
-                                    style={{ ...vintageButtonStyle, fontSize: '0.8rem', padding: '8px 16px' }}
-                                    onClick={() => handleEditPostClick(post)}
-                                    onMouseOver={(e) => {
-                                        e.target.style.backgroundColor = vintageTheme.colors.secondary;
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.target.style.backgroundColor = vintageTheme.colors.primary;
-                                    }}
-                                >
-                                    <Edit3 size={14} />
-                                    Edit
-                                </button>
-                                <button
-                                    style={{
-                                        ...vintageButtonStyle,
-                                        backgroundColor: '#B8860B',
-                                        borderColor: '#B8860B',
-                                        fontSize: '0.8rem',
-                                        padding: '8px 16px'
-                                    }}
-                                    onClick={() => deletePost(post.id)}
-                                    onMouseOver={(e) => {
-                                        e.target.style.backgroundColor = '#8B4513';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.target.style.backgroundColor = '#B8860B';
-                                    }}
-                                >
-                                    <Trash2 size={14} />
-                                    Delete
-                                </button>
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '0.75rem',
+                                    flexWrap: 'wrap'
+                                }}>
+                                    <button
+                                        style={{ ...vintageButtonStyle, fontSize: '0.8rem', padding: '8px 16px' }}
+                                        onClick={() => handleEditPostClick(post)}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = vintageTheme.colors.secondary;
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = vintageTheme.colors.primary;
+                                        }}
+                                    >
+                                        <Edit3 size={14} />
+                                        Edit
+                                    </button>
+                                    <button
+                                        style={{
+                                            ...vintageButtonStyle,
+                                            backgroundColor: '#B8860B',
+                                            borderColor: '#B8860B',
+                                            fontSize: '0.8rem',
+                                            padding: '8px 16px'
+                                        }}
+                                        onClick={() => deletePost(post.id)}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = '#8B4513';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = '#B8860B';
+                                        }}
+                                    >
+                                        <Trash2 size={14} />
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Create Post Modal */}
+                {postOpen && (
+                    <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && setPostOpen(false)}>
+                        <div style={modalBox}>
+                            <h3 style={modalTitleStyle}>Add New Treasure</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <input
+                                    name="title"
+                                    value={postData.title}
+                                    onChange={handlePostChange}
+                                    placeholder="Item Title"
+                                    style={inputStyle}
+                                />
+                                <textarea
+                                    name="description"
+                                    value={postData.description}
+                                    onChange={handlePostChange}
+                                    placeholder="Description"
+                                    rows="4"
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                                <input
+                                    name="price"
+                                    value={postData.price}
+                                    onChange={handlePostChange}
+                                    placeholder="Price (RM)"
+                                    style={inputStyle}
+                                />
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handlePostImageUpload}
+                                    style={{ ...inputStyle, padding: '10px' }}
+                                />
+                                {postData.image && (
+                                    <img
+                                        src={postData.image}
+                                        alt="Preview"
+                                        style={{
+                                            maxWidth: '100%',
+                                            height: '200px',
+                                            objectFit: 'cover',
+                                            borderRadius: '10px',
+                                            border: `2px solid ${vintageTheme.colors.gold}`
+                                        }}
+                                    />
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                                    <button
+                                        onClick={() => setPostOpen(false)}
+                                        style={{
+                                            ...vintageButtonStyle,
+                                            backgroundColor: vintageTheme.colors.dustyRose,
+                                            borderColor: vintageTheme.colors.dustyRose
+                                        }}
+                                    >
+                                        <X size={16} />
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handlePostSubmit}
+                                        style={vintageButtonStyle}
+                                    >
+                                        <Save size={16} />
+                                        Create Listing
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    ))
+                    </div>
+                )}
+
+                {/* Edit Post Modal */}
+                {editPostOpen && (
+                    <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && setEditPostOpen(false)}>
+                        <div style={modalBox}>
+                            <h3 style={modalTitleStyle}>Edit Listing</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <input
+                                    name="title"
+                                    value={editPostData.title}
+                                    onChange={handleEditPostChange}
+                                    placeholder="Title"
+                                    style={inputStyle}
+                                />
+                                <textarea
+                                    name="description"
+                                    value={editPostData.description}
+                                    onChange={handleEditPostChange}
+                                    placeholder="Description"
+                                    rows="4"
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                                <input
+                                    name="price"
+                                    value={editPostData.price}
+                                    onChange={handleEditPostChange}
+                                    placeholder="Price"
+                                    style={inputStyle}
+                                />
+                                <input
+                                    name="image"
+                                    value={editPostData.image}
+                                    onChange={handleEditPostChange}
+                                    placeholder="Image URL"
+                                    style={inputStyle}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                                    <button
+                                        onClick={() => setEditPostOpen(false)}
+                                        style={{
+                                            ...vintageButtonStyle,
+                                            backgroundColor: vintageTheme.colors.dustyRose,
+                                            borderColor: vintageTheme.colors.dustyRose
+                                        }}
+                                    >
+                                        <X size={16} />
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={saveEditedPost}
+                                        style={vintageButtonStyle}
+                                    >
+                                        <Save size={16} />
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Profile Modal */}
+                {editOpen && (
+                    <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && setEditOpen(false)}>
+                        <div style={modalBox}>
+                            <h3 style={modalTitleStyle}>Edit Profile</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <input
+                                    name="fullName"
+                                    value={formData.fullName}
+                                    onChange={handleEditChange}
+                                    placeholder="Full Name"
+                                    style={inputStyle}
+                                />
+                                <textarea
+                                    name="bio"
+                                    value={formData.bio}
+                                    onChange={handleEditChange}
+                                    placeholder="Bio"
+                                    rows="3"
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                                <input
+                                    name="profilePic"
+                                    value={formData.profilePic}
+                                    onChange={handleEditChange}
+                                    placeholder="Profile Picture URL"
+                                    style={inputStyle}
+                                />
+                                <input
+                                    type="file"
+                                    name="profilePic"
+                                    onChange={handleFileChange}
+                                    style={{ ...inputStyle, padding: '10px' }}
+                                />
+                                <input
+                                    name="banner"
+                                    value={formData.banner}
+                                    onChange={handleEditChange}
+                                    placeholder="Banner Image URL"
+                                    style={inputStyle}
+                                />
+                                <input
+                                    type="file"
+                                    name="banner"
+                                    onChange={handleFileChange}
+                                    style={{ ...inputStyle, padding: '10px' }}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                                    <button
+                                        onClick={() => setEditOpen(false)}
+                                        style={{
+                                            ...vintageButtonStyle,
+                                            backgroundColor: vintageTheme.colors.dustyRose,
+                                            borderColor: vintageTheme.colors.dustyRose
+                                        }}
+                                    >
+                                        <X size={16} />
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={saveChanges}
+                                        style={vintageButtonStyle}
+                                    >
+                                        <Save size={16} />
+                                        Save Profile
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
-
-            {/* Create Post Modal */}
-            {postOpen && (
-                <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && setPostOpen(false)}>
-                    <div style={modalBox}>
-                        <h3 style={modalTitleStyle}>Add New Treasure</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <input
-                                name="title"
-                                value={postData.title}
-                                onChange={handlePostChange}
-                                placeholder="Item Title"
-                                style={inputStyle}
-                            />
-                            <textarea
-                                name="description"
-                                value={postData.description}
-                                onChange={handlePostChange}
-                                placeholder="Description"
-                                rows="4"
-                                style={{ ...inputStyle, resize: 'vertical' }}
-                            />
-                            <input
-                                name="price"
-                                value={postData.price}
-                                onChange={handlePostChange}
-                                placeholder="Price (RM)"
-                                style={inputStyle}
-                            />
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handlePostImageUpload}
-                                style={{ ...inputStyle, padding: '10px' }}
-                            />
-                            {postData.image && (
-                                <img
-                                    src={postData.image}
-                                    alt="Preview"
-                                    style={{
-                                        maxWidth: '100%',
-                                        height: '200px',
-                                        objectFit: 'cover',
-                                        borderRadius: '10px',
-                                        border: `2px solid ${vintageTheme.colors.gold}`
-                                    }}
-                                />
-                            )}
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                                <button
-                                    onClick={() => setPostOpen(false)}
-                                    style={{
-                                        ...vintageButtonStyle,
-                                        backgroundColor: vintageTheme.colors.dustyRose,
-                                        borderColor: vintageTheme.colors.dustyRose
-                                    }}
-                                >
-                                    <X size={16} />
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handlePostSubmit}
-                                    style={vintageButtonStyle}
-                                >
-                                    <Save size={16} />
-                                    Create Listing
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Post Modal */}
-            {editPostOpen && (
-                <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && setEditPostOpen(false)}>
-                    <div style={modalBox}>
-                        <h3 style={modalTitleStyle}>Edit Listing</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <input
-                                name="title"
-                                value={editPostData.title}
-                                onChange={handleEditPostChange}
-                                placeholder="Title"
-                                style={inputStyle}
-                            />
-                            <textarea
-                                name="description"
-                                value={editPostData.description}
-                                onChange={handleEditPostChange}
-                                placeholder="Description"
-                                rows="4"
-                                style={{ ...inputStyle, resize: 'vertical' }}
-                            />
-                            <input
-                                name="price"
-                                value={editPostData.price}
-                                onChange={handleEditPostChange}
-                                placeholder="Price"
-                                style={inputStyle}
-                            />
-                            <input
-                                name="image"
-                                value={editPostData.image}
-                                onChange={handleEditPostChange}
-                                placeholder="Image URL"
-                                style={inputStyle}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                                <button
-                                    onClick={() => setEditPostOpen(false)}
-                                    style={{
-                                        ...vintageButtonStyle,
-                                        backgroundColor: vintageTheme.colors.dustyRose,
-                                        borderColor: vintageTheme.colors.dustyRose
-                                    }}
-                                >
-                                    <X size={16} />
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={saveEditedPost}
-                                    style={vintageButtonStyle}
-                                >
-                                    <Save size={16} />
-                                    Save Changes
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Profile Modal */}
-            {editOpen && (
-                <div style={modalOverlay} onClick={(e) => e.target === e.currentTarget && setEditOpen(false)}>
-                    <div style={modalBox}>
-                        <h3 style={modalTitleStyle}>Edit Profile</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <input
-                                name="fullName"
-                                value={formData.fullName}
-                                onChange={handleEditChange}
-                                placeholder="Full Name"
-                                style={inputStyle}
-                            />
-                            <textarea
-                                name="bio"
-                                value={formData.bio}
-                                onChange={handleEditChange}
-                                placeholder="Bio"
-                                rows="3"
-                                style={{ ...inputStyle, resize: 'vertical' }}
-                            />
-                            <input
-                                name="profilePic"
-                                value={formData.profilePic}
-                                onChange={handleEditChange}
-                                placeholder="Profile Picture URL"
-                                style={inputStyle}
-                            />
-                            <input
-                                type="file"
-                                name="profilePic"
-                                onChange={handleFileChange}
-                                style={{ ...inputStyle, padding: '10px' }}
-                            />
-                            <input
-                                name="banner"
-                                value={formData.banner}
-                                onChange={handleEditChange}
-                                placeholder="Banner Image URL"
-                                style={inputStyle}
-                            />
-                            <input
-                                type="file"
-                                name="banner"
-                                onChange={handleFileChange}
-                                style={{ ...inputStyle, padding: '10px' }}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                                <button
-                                    onClick={() => setEditOpen(false)}
-                                    style={{
-                                        ...vintageButtonStyle,
-                                        backgroundColor: vintageTheme.colors.dustyRose,
-                                        borderColor: vintageTheme.colors.dustyRose
-                                    }}
-                                >
-                                    <X size={16} />
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={saveChanges}
-                                    style={vintageButtonStyle}
-                                >
-                                    <Save size={16} />
-                                    Save Profile
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
